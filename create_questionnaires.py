@@ -74,6 +74,7 @@ def create_questionnaire(doc, results, num_single):
     # Single message questions
     doc.add_heading('Single Message Questions', level=1)
 
+    answers = []
     for pair in single_message_pairs:
         random.shuffle(pair)
         selected_message = pair[0][1]
@@ -85,6 +86,8 @@ def create_questionnaire(doc, results, num_single):
         run.bold = True
         run = answers_paragraph.add_run("\t\tHuman\t\t|\t\tLLM\n")
         run.font.size = Pt(12)
+
+        answers.append(('single', pair[0][1], pair[0][0]))
 
     # Paired message questions
     doc.add_heading('Paired Message Questions', level=1)
@@ -103,6 +106,35 @@ def create_questionnaire(doc, results, num_single):
         doc.add_paragraph(
             "Phishing message B:\t\tHuman\t\t|\t\tLLM\n", style='List Bullet')
 
+        answers.append(
+            ('paired', pair[0][1], pair[0][0], pair[1][1], pair[1][0]))
+
+    return answers
+
+
+def create_answers_df(questionnaires_answers):
+    questionnaire_number_col = [i for i in range(1, 61) for _ in range(5)]
+    questionnaire_question_num_col = [
+        i for _ in range(60) for i in range(1, 6)]
+
+    # Add questions and answers to the DF
+    questions_col = []
+    answers_col = []
+    for questionnaire in questionnaires_answers:
+        questionnaire_answers = []
+        for question in questionnaire:
+            if question[0] == 'single':
+                questions_col.append(question[1])
+                questionnaire_answers.append(f'{question[2]}')
+            else:
+                # Paired question
+                questions_col.append(f'A: {question[1]}\n\nB:{question[3]}')
+                questionnaire_answers.append(
+                    f'A:{question[2]},B:{question[4]}')
+        answers_col.extend(questionnaire_answers)
+
+    return pd.DataFrame(data={'Questionnaire number': questionnaire_number_col, 'Question number': questionnaire_question_num_col, 'Question': questions_col, 'Answer': answers_col})
+
 
 if __name__ == "__main__":
     # Load dataset from HF
@@ -120,16 +152,23 @@ if __name__ == "__main__":
     sampled_experiments = get_sampled_experiments(test_df)
 
     # Create 60 questionnaires
+    questionnaires_answers = []
     for i, result in enumerate(sampled_experiments, 1):
         doc = Document()
 
         # 30 questionnaires with 3 single and 2 paired, 30 with 2 single and 3 paired
         if i <= 30:
-            create_questionnaire(doc, result, num_single=3)
+            answers = create_questionnaire(doc, result, num_single=3)
         else:
-            create_questionnaire(doc, result, num_single=2)
+            answers = create_questionnaire(doc, result, num_single=2)
+        questionnaires_answers.append(answers)
 
         # Save the document
         doc_path = f'{QUESTIONNAIRES_PATH}/questionnaire_{i}.docx'
         doc.save(doc_path)
         print(f"Questionnaire {i} saved to {doc_path}")
+
+    print("Creating and saving CSV to track and analyze questionnaire results")
+    answers_df = create_answers_df(questionnaires_answers)
+    answers_df.to_csv(
+        './data/questionnaires/questionnaires_answers.csv', index=False)
