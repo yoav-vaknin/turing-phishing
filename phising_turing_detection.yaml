@@ -1,0 +1,31 @@
+task: turing_phishing_detection
+dataset_path: tomshe/turing_phishing_detection # a copy of `cais/mmlu` with no auxiliary_train split
+test_split: test
+fewshot_split: test
+fewshot_config:
+  sampler: first_n
+fewshot_split: validation
+fewshot_config:
+  sampler: first_n
+num_fewshot: 0
+output_type: generate_until
+doc_to_target: "{{human_index}}"
+doc_to_text: !function util.create_selection_question
+filter_list:
+  - name: "flexible-extract"
+    filter:
+      - function: regex
+        group_select: 0
+        regex_pattern: "(?i)[\\[\\(]?(1|2)[\\]\\)]?"
+      - function: "take_first"
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    ignore_case: true
+    ignore_punctuation: true
+    higher_is_better: true
+generation_kwargs:
+  do_sample: True
+  temperature: 0.7
+metadata:
+  version: 0.0

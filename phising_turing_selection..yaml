@@ -1,0 +1,28 @@
+task: turing_phishing_selection
+dataset_path: tomshe/turing_phishing_selection # a copy of `cais/mmlu` with no auxiliary_train split
+test_split: test
+fewshot_split: validation
+fewshot_config:
+  sampler: first_n
+num_fewshot: 0
+output_type: generate_until
+doc_to_target: "{{target}}"
+doc_to_text: "Your task is to Identify if large lanauge model or human created this message: \n {{message}} \n Identify if large lanauge model or human created this message: [LLM] / [human] \nA: ["
+filter_list:
+  - name: "flexible-extract"
+    filter:
+      - function: regex
+        group_select: 0
+        regex_pattern: "(?i)[\\[\\(]?(human|llm)[\\]\\)]?"
+      - function: "take_first"
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    ignore_case: true
+    ignore_punctuation: true
+    higher_is_better: true
+generation_kwargs:
+  do_sample: True
+  temperature: 0.7
+metadata:
+  version: 0.0
