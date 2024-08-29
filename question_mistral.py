@@ -33,7 +33,7 @@ SINGLE_Q_PROMPT = """
 
 # Initialize Mistral API parameters
 # Mistral API key (need to insert to use it!)
-API_KEY = "3j5kumcWoYHyvt1SdnhUDRiLr2D407DB"
+API_KEY = ""
 # Mistral API endpoint
 API_ENDPOINT = "https://api.mistral.ai/v1/chat/completions"
 
